@@ -1,1 +1,1 @@
-# proxy
+# OpenProfile.AI Gateway

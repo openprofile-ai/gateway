@@ -1,3 +1,4 @@
 .idea/
 .windsurfrules
 venv/
+__pycache__/

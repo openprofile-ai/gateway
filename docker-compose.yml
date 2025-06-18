@@ -1,0 +1,11 @@
+services:
+  openprofile:
+    container_name: openprofile-gateway
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./src:/app/src             # Dev: live reload when code changes
+    command: ["python", "-m", "gateway.main"]

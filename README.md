@@ -49,11 +49,11 @@ uv run -m gateway.main
 To run the test suite, use the following command:
 
 ```bash
-pytest tests/
+uv run pytest tests/
 ```
 
 For more detailed test output, you can use:
 
 ```bash
-pytest -v tests/
+uv run pytest -v tests/
 ```

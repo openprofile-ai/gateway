@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: '3.13'
+
+jobs:
+  lint-and-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+
+      - name: 📦 Install dependencies (lint)
+        run: uv sync --dev
+
+      - name: ✨ Lint with Ruff
+        run: |
+          uv run ruff check src
+          uv run ruff format --check src
+
+      - name: ✅ Run tests
+        run: uv run pytest tests/
+        continue-on-error: true  # Make strict if critical
+

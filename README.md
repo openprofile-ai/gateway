@@ -28,10 +28,10 @@ The gateway acts as a central hub for managing personal data. It exposes an MCP 
 
 3. Install the project dependencies:
    ```bash
-   uv pip install -e .
+   uv pip install -e '.[dev]'
    ```
 
-4. Add new dependency to the project:
+4. To add new dependency to the project:
    ```bash
    uv add package_name
    ```

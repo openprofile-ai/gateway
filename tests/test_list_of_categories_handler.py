@@ -3,7 +3,7 @@ import pytest
 from fastmcp.server import FastMCP
 from fastmcp import Client
 
-from handlers.list_of_categories_handler import ListOfCategoriesHandler
+from gateway.handlers.list_of_categories_handler import ListOfCategoriesHandler
 
 
 @pytest.fixture

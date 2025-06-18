@@ -1,6 +1,6 @@
 from typing import Dict, Any
 
-from handlers.base_handler import BaseHandler
+from gateway.handlers.base_handler import BaseHandler
 
 
 class EnableFactPodHandler(BaseHandler):

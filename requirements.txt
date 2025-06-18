@@ -1,6 +1,0 @@
-fastmcp
-aiosqlite
-aioboto3
-boto3
-pytest
-pytest-asyncio

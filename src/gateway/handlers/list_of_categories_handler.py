@@ -1,6 +1,6 @@
-from typing import Dict, List, Any
+from typing import Dict, List
 
-from handlers.base_handler import BaseHandler
+from gateway.handlers.base_handler import BaseHandler
 
 
 class ListOfCategoriesHandler(BaseHandler):

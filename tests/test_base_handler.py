@@ -3,7 +3,7 @@ import pytest
 from fastmcp.server import FastMCP
 from fastmcp import Client
 
-from handlers.base_handler import BaseHandler
+from gateway.handlers.base_handler import BaseHandler
 
 
 class ConcreteHandler(BaseHandler):

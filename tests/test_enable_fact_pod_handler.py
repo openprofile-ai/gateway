@@ -3,7 +3,7 @@ import pytest
 from fastmcp.server import FastMCP
 from fastmcp import Client
 
-from handlers.enable_fact_pod_handler import EnableFactPodHandler
+from gateway.handlers.enable_fact_pod_handler import EnableFactPodHandler
 
 
 @pytest.fixture

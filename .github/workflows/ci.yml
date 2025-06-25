@@ -34,6 +34,11 @@ jobs:
           uv sync
           uv pip install ruff pytest pytest-asyncio
 
+      - name: 🚀 Check application startup
+        env:
+          PYTHONPATH: src
+        run: uv run python -c "import gateway.main"
+
       - name: ✨ Lint with Ruff
         run: |
           uv run ruff check src
@@ -42,4 +47,3 @@ jobs:
       - name: ✅ Run tests
         run: uv run pytest tests/
         continue-on-error: true  # Make strict if critical
-

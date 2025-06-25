@@ -1,10 +1,10 @@
-from typing import Dict, Any
+from typing import Any
 
 from gateway.handlers.base_handler import BaseHandler
 
 
 class EnableFactPodHandler(BaseHandler):
-    async def tool_method(self, pod_name: str) -> Dict[str, Any]:
+    async def tool_method(self, pod_name: str) -> dict[str, Any]:
         """
         Enable a fact pod with the given name.
 

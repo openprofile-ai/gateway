@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any
 
 from fastmcp.server import FastMCP
 
@@ -13,7 +13,7 @@ class BaseHandler(ABC):
         self.repository = DynamoDBRepository()
 
     @abstractmethod
-    async def tool_method(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+    async def tool_method(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """
         Abstract method to be implemented by subclasses.
         This method should define the functionality of the tool.

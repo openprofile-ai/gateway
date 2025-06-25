@@ -1,5 +1,3 @@
-from typing import List
-
 from gateway.db.repository import Repository
 
 
@@ -18,7 +16,7 @@ class DynamoDBRepository(Repository):
         self._dynamodb = None
         self._table = None
 
-    async def get_categories(self) -> List[str]:
+    async def get_categories(self) -> list[str]:
         """
         Fetch all categories from the DynamoDB table.
 

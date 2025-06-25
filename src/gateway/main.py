@@ -1,9 +1,9 @@
 from fastmcp.server import FastMCP
 
-from tools.disable_fact_pod_handler import DisableFactPodHandler
-from tools.enable_fact_pod_handler import EnableFactPodHandler
-from tools.facts_by_category_handler import FactsByCategoryHandler
-from tools.list_of_categories_handler import ListOfCategoriesHandler
+from gateway.handlers.disable_fact_pod_handler import DisableFactPodHandler
+from gateway.handlers.enable_fact_pod_handler import EnableFactPodHandler
+from gateway.handlers.facts_by_category_handler import FactsByCategoryHandler
+from gateway.handlers.list_of_categories_handler import ListOfCategoriesHandler
 
 
 def create_application(mcp_instance: FastMCP = None) -> FastMCP:

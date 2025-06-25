@@ -1,6 +1,5 @@
 import json
 import pytest
-from fastmcp.server import FastMCP
 from fastmcp import Client
 
 from gateway.handlers.base_handler import BaseHandler
@@ -15,17 +14,16 @@ class ConcreteHandler(BaseHandler):
 
 
 @pytest.fixture
-def mcp_server():
-    """Create a FastMCP server instance for testing."""
-    server = FastMCP("TestServer")
-    handler = ConcreteHandler(server)
-    return server
+def concrete_handler(base_mcp_server):
+    """Create a ConcreteHandler instance for testing."""
+    return ConcreteHandler(base_mcp_server)
 
 
 @pytest.mark.asyncio
-async def test_base_handler_registration(mcp_server):
+async def test_base_handler_registration(base_mcp_server, concrete_handler):
     """Test that the handler's tool method is properly registered with the server."""
-    async with Client(mcp_server) as client:
+    async with Client(base_mcp_server) as client:
+        # Note: We call the tool using the handler class name, not the method name
         result = await client.call_tool("ConcreteHandler", {"name": "World"})
         # Parse the TextContent response
         response = json.loads(result[0].text)

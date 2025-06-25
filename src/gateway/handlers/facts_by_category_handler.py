@@ -1,10 +1,10 @@
-from typing import Dict, List, Any
+from typing import Any
 
 from gateway.handlers.base_handler import BaseHandler
 
 
 class FactsByCategoryHandler(BaseHandler):
-    async def tool_method(self, category_name: str) -> Dict[str, List[Dict[str, Any]]]:
+    async def tool_method(self, category_name: str) -> dict[str, list[dict[str, Any]]]:
         """
         Retrieve facts by category name.
 

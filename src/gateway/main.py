@@ -5,12 +5,32 @@ from gateway.handlers.enable_fact_pod_handler import EnableFactPodHandler
 from gateway.handlers.facts_by_category_handler import FactsByCategoryHandler
 from gateway.handlers.list_of_categories_handler import ListOfCategoriesHandler
 
-mcp = FastMCP("OpenProfile.AI")
-# The methods are automatically registered when creating the instance
-enable_fact_pod_handler = EnableFactPodHandler(mcp)
-disable_fact_pod_handler = DisableFactPodHandler(mcp)
-list_of_categories_handler = ListOfCategoriesHandler(mcp)
-factsByCategoryHandler = FactsByCategoryHandler(mcp)
+
+def create_application(mcp_instance: FastMCP = None) -> FastMCP:
+    """Create and configure the FastMCP application.
+
+    Args:
+        mcp_instance: Optional FastMCP instance (creates one if not provided)
+
+    Returns:
+        Configured FastMCP instance with all handlers registered
+    """
+    # Create a new instance if none is provided, or use the provided one
+    # This pattern is primarily useful for testing, where a test-specific
+    # instance can be passed in
+    mcp = mcp_instance if mcp_instance is not None else FastMCP("OpenProfile.AI")
+
+    # Initialize and register all handlers
+    EnableFactPodHandler(mcp)
+    DisableFactPodHandler(mcp)
+    ListOfCategoriesHandler(mcp)
+    FactsByCategoryHandler(mcp)
+
+    return mcp
+
+
+# Create the main application instance with default configuration
+mcp = create_application()
 
 if __name__ == "__main__":
     mcp.run()

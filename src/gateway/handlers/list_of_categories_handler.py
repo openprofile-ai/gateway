@@ -1,10 +1,8 @@
-from typing import Dict, List
-
 from gateway.handlers.base_handler import BaseHandler
 
 
 class ListOfCategoriesHandler(BaseHandler):
-    async def tool_method(self) -> Dict[str, List[str]]:
+    async def tool_method(self) -> dict[str, list[str]]:
         """
         Retrieve a list of all available fact categories.
 

@@ -18,7 +18,7 @@ def mcp_server():
 async def test_facts_by_category(mcp_server):
     """Test that the facts_by_category tool returns the expected structure."""
     async with Client(mcp_server) as client:
-        result = await client.call_tool("tool_method", {"category_name": "animals"})
+        result = await client.call_tool("FactsByCategoryHandler", {"category_name": "animals"})
         # Parse the TextContent response
         response = json.loads(result[0].text)
         assert "facts" in response

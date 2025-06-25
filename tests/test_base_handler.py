@@ -26,7 +26,7 @@ def mcp_server():
 async def test_base_handler_registration(mcp_server):
     """Test that the handler's tool method is properly registered with the server."""
     async with Client(mcp_server) as client:
-        result = await client.call_tool("tool_method", {"name": "World"})
+        result = await client.call_tool("ConcreteHandler", {"name": "World"})
         # Parse the TextContent response
         response = json.loads(result[0].text)
         assert response["message"] == "Hello, World!"

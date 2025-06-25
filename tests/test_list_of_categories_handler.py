@@ -18,7 +18,7 @@ def mcp_server():
 async def test_list_of_categories(mcp_server):
     """Test that the list_of_categories tool returns the expected structure."""
     async with Client(mcp_server) as client:
-        result = await client.call_tool("tool_method")
+        result = await client.call_tool("ListOfCategoriesHandler")
         # Parse the TextContent response
         response = json.loads(result[0].text)
         assert "categories" in response

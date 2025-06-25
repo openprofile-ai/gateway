@@ -35,6 +35,8 @@ jobs:
           uv pip install ruff pytest pytest-asyncio
 
       - name: 🚀 Check application startup
+        env:
+          PYTHONPATH: src
         run: uv run python -c "import gateway.main"
 
       - name: ✨ Lint with Ruff

@@ -18,7 +18,8 @@ def create_application(mcp_instance: FastMCP = None) -> FastMCP:
     # Create a new instance if none is provided, or use the provided one
     # This pattern is primarily useful for testing, where a test-specific
     # instance can be passed in
-    mcp = mcp_instance if mcp_instance is not None else FastMCP("OpenProfile.AI")
+    mcp = mcp_instance if mcp_instance is not None else FastMCP(
+        "OpenProfile.AI")
 
     # Initialize and register all handlers
     EnableFactPodHandler(mcp)

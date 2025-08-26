@@ -1,3 +1,4 @@
+from typing import Dict, Any, Optional
 from gateway.db.repository import Repository
 
 
@@ -29,3 +30,85 @@ class DynamoDBRepository(Repository):
         # In a real implementation, this would make an async call to DynamoDB
         # For now, we'll return mock data
         return ["Category1", "Category2", "Category3"]
+
+    async def get_fact_pod_config(self, site: str) -> Optional[Dict[str, Any]]:
+        """
+        Get configuration for a fact pod site from DynamoDB.
+
+        Args:
+            site: Domain of the site
+
+        Returns:
+            Configuration dictionary or None if not found
+
+        Raises:
+            Exception: If there's an error accessing DynamoDB
+        """
+        # In a real implementation, this would query DynamoDB for the site configuration
+        # For now, return mock data for known sites or None for unknown sites
+        if site == "example.com":
+            return {
+                "site": site,
+                "enabled": True,
+                "created_at": "2025-06-25T12:00:00Z"
+            }
+        return None
+
+    async def get_user_site_connection(self, user_id: str, site: str) -> Optional[Dict[str, Any]]:
+        """
+        Check if a user has already enabled a site's fact pod.
+
+        Args:
+            user_id: ID of the user
+            site: Domain of the site
+
+        Returns:
+            Connection details if exists, otherwise None
+
+        Raises:
+            Exception: If there's an error accessing DynamoDB
+        """
+        # In a real implementation, this would query DynamoDB for the user-site connection
+        # For now, return None to indicate no existing connection
+        return None
+
+    async def store_oauth_config(self, user_id: str, site: str,
+                                 client_id: str, client_secret: str,
+                                 redirect_url: str) -> None:
+        """
+        Store OAuth configuration for a user-site connection in DynamoDB.
+
+        Args:
+            user_id: ID of the user
+            site: Domain of the site
+            client_id: OAuth client ID
+            client_secret: OAuth client secret
+            redirect_url: OAuth redirect URL
+
+        Raises:
+            Exception: If there's an error accessing DynamoDB
+        """
+        # In a real implementation, this would store the OAuth config in DynamoDB
+        # For now, just log the operation
+        print(f"Storing OAuth config for user {user_id} and site {site}")
+        # Item would be created with user_id and site as keys, plus the OAuth details
+        # self._table.put_item(Item={...})
+
+    async def store_oauth_state(self, state: str, user_id: str, site: str) -> None:
+        """
+        Store OAuth state for CSRF protection in DynamoDB.
+
+        Args:
+            state: Random state string
+            user_id: ID of the user
+            site: Domain of the site
+
+        Raises:
+            Exception: If there's an error accessing DynamoDB
+        """
+        # In a real implementation, this would store the state in DynamoDB with TTL
+        # For now, just log the operation
+        print(
+            f"Storing OAuth state {state} for user {user_id} and site {site}")
+        # Item would be created with state as key, plus user_id, site, and expiration timestamp
+        # self._table.put_item(Item={...})

@@ -1,10 +1,8 @@
 import json
 import uuid
-from typing import Any, Dict, Optional, List, Union
+from typing import Any, Dict, Optional
 
-import httpx
 from fastmcp.server import FastMCP
-from fastmcp import Client as FastMCPClient
 
 from gateway.handlers.base_handler import BaseHandler
 from gateway.http.client import HTTPClientInterface, AsyncHTTPClient
@@ -108,10 +106,10 @@ class EnableFactPodHandler(BaseHandler):
 
         # 4. Fetch JWKS if needed
         try:
-            jwks = await self._fetch_jwks(openid_config.jwks_uri, use_mcp=use_mcp_client)
-        except Exception as e:
+            await self._fetch_jwks(openid_config.jwks_uri, use_mcp=use_mcp_client)
+        except Exception:
             # Non-blocking error, we can continue without JWKS
-            jwks = None
+            pass
 
         # 5. Perform dynamic client registration
         try:

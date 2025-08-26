@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 from fastmcp.server import FastMCP
 
@@ -22,14 +22,14 @@ class TestMain(unittest.TestCase):
         """Test create_application when an MCP instance is provided."""
         # Act
         result = create_application(self.mock_mcp)
-        
+
         # Assert
         # Verify that all handlers were initialized with the MCP instance
         mock_enable.assert_called_once_with(self.mock_mcp)
         mock_disable.assert_called_once_with(self.mock_mcp)
         mock_list.assert_called_once_with(self.mock_mcp)
         mock_facts.assert_called_once_with(self.mock_mcp)
-        
+
         # Verify that the provided MCP instance is returned
         self.assertEqual(result, self.mock_mcp)
 
@@ -43,20 +43,20 @@ class TestMain(unittest.TestCase):
         # Arrange
         mock_new_mcp = MagicMock(spec=FastMCP)
         mock_fastmcp.return_value = mock_new_mcp
-        
+
         # Act
         result = create_application()
-        
+
         # Assert
         # Verify FastMCP was created with the default server name
         mock_fastmcp.assert_called_once_with("OpenProfile.AI")
-        
+
         # Verify all handlers were initialized with the new MCP instance
         mock_enable.assert_called_once_with(mock_new_mcp)
         mock_disable.assert_called_once_with(mock_new_mcp)
         mock_list.assert_called_once_with(mock_new_mcp)
         mock_facts.assert_called_once_with(mock_new_mcp)
-        
+
         # Verify that the new MCP instance is returned
         self.assertEqual(result, mock_new_mcp)
 

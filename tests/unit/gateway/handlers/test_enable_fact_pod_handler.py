@@ -1,12 +1,11 @@
 import json
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock, call
+from unittest.mock import AsyncMock, MagicMock, call
 from fastmcp import Client
 
 from gateway.handlers.enable_fact_pod_handler import EnableFactPodHandler
 from gateway.http.client import HTTPClientInterface
 from gateway.client.interface import MCPClientInterface
-from gateway.models.oauth import OpenIDConfiguration, ClientRegistrationResponse, JWKS
 
 
 @pytest.fixture

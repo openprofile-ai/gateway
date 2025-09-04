@@ -14,7 +14,7 @@ from gateway.config import GatewaySettings
 def test_default_settings():
     """Test that default settings are loaded correctly."""
     settings = GatewaySettings()
-    assert settings.db_table_name == "categories"
+    assert settings.db_table_name == "gateway-table"
     assert settings.db_region_name == "us-east-1"
     assert settings.oauth_redirect_template == "https://{site}/oauth/callback"
     assert settings.log_level == "INFO"

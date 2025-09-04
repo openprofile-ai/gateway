@@ -3,6 +3,7 @@
 
 class GatewayError(Exception):
     """Base exception for all gateway service errors."""
+
     pass
 
 
@@ -19,14 +20,19 @@ class HTTPError(GatewayError):
         """
         self.status_code = status_code
         super().__init__(
-            message or f"HTTP error occurred, status code: {status_code}", *args, **kwargs)
+            message or f"HTTP error occurred, status code: {status_code}",
+            *args,
+            **kwargs,
+        )
 
 
 class RepositoryError(GatewayError):
     """Raised when repository operations fail."""
+
     pass
 
 
 class FactPodServiceError(GatewayError):
     """Raised when Fact Pod service operations fail."""
+
     pass

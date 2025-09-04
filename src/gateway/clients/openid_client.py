@@ -1,10 +1,15 @@
 """OpenID client implementation."""
+
 import logging
 from typing import List
 from urllib.parse import urljoin
 
 from gateway.clients.http_client import AsyncHTTPClient
-from gateway.models.oauth import OpenIDConfiguration, ClientRegistrationResponse, ClientRegistrationRequest
+from gateway.models.auth.oauth import (
+    ClientRegistrationResponse,
+    ClientRegistrationRequest,
+)
+from gateway.models.auth.openid import OpenIDConfiguration
 from gateway.exceptions import GatewayError, HTTPError, FactPodServiceError
 
 logger = logging.getLogger(__name__)
@@ -45,32 +50,33 @@ class HttpOpenIDClient:
             config_data = response.json()
 
             required_fields = {
-                "issuer", "authorization_endpoint", "token_endpoint",
-                "registration_endpoint", "jwks_uri"
+                "issuer",
+                "authorization_endpoint",
+                "token_endpoint",
+                "registration_endpoint",
+                "jwks_uri",
             }
 
-            if missing:= required_fields - set(config_data):
+            if missing := required_fields - set(config_data):
                 raise GatewayError(
-                    f"Missing required fields in OpenID config: {missing}")
+                    f"Missing required fields in OpenID config: {missing}"
+                )
 
             return OpenIDConfiguration(**config_data)
 
         except HTTPError as error:
-            logger.error(
-                "HTTP error during OpenID configuration fetch: %s", str(error))
+            logger.error("HTTP error during OpenID configuration fetch: %s", str(error))
             raise FactPodServiceError(
-                f"Failed to fetch OpenID configuration: {str(error)}") from error
+                f"Failed to fetch OpenID configuration: {str(error)}"
+            ) from error
         except Exception as error:
-            logger.error(
-                "Failed to fetch OpenID configuration: %s", str(error))
+            logger.error("Failed to fetch OpenID configuration: %s", str(error))
             raise GatewayError(
-                f"Failed to fetch OpenID configuration: {str(error)}") from error
+                f"Failed to fetch OpenID configuration: {str(error)}"
+            ) from error
 
     async def register_client(
-            self,
-            registration_endpoint: str,
-            redirect_uris: List[str],
-            client_name: str
+        self, registration_endpoint: str, redirect_uris: List[str], client_name: str
     ) -> ClientRegistrationResponse:
         """
         Register client with OpenID provider.
@@ -104,15 +110,13 @@ class HttpOpenIDClient:
             response = await self.http_client.post(
                 url=registration_endpoint,
                 json=registration_request.dict(),
-                headers=headers
+                headers=headers,
             )
             response.raise_for_status()
             return ClientRegistrationResponse(**response.json())
         except HTTPError as error:
-            logger.error(
-                "HTTP error during client registration: %s", str(error))
+            logger.error("HTTP error during client registration: %s", str(error))
             raise FactPodServiceError from error
         except Exception as error:
             logger.error("Failed to register client: %s", str(error))
-            raise GatewayError(
-                f"Failed to register client: {str(error)}") from error
+            raise GatewayError(f"Failed to register client: {str(error)}") from error

@@ -2,10 +2,7 @@ import logging
 from typing import Dict, Any
 from gateway.handlers.base_handler import BaseHandler
 
-from gateway.exceptions import (
-    GatewayError,
-    RepositoryError
-)
+from gateway.exceptions import GatewayError, RepositoryError
 
 logger = logging.getLogger(__name__)
 
@@ -29,20 +26,21 @@ class FactsByCategoryHandler(BaseHandler):
             return {
                 "status": "error",
                 "message": f"Category '{category_name}' not found",
-                "facts": []
+                "facts": [],
             }
         except GatewayError as e:
             logger.error(f"Gateway error: {str(e)}")
             return {
                 "status": "error",
                 "message": f"Gateway error: {str(e)}",
-                "facts": []
+                "facts": [],
             }
         except Exception as e:
             logger.error(
-                f"Unexpected error in FactsByCategoryHandler: {str(e)}", exc_info=True)
+                f"Unexpected error in FactsByCategoryHandler: {str(e)}", exc_info=True
+            )
             return {
                 "status": "error",
                 "message": f"An unexpected error occurred: {str(e)}",
-                "facts": []
+                "facts": [],
             }

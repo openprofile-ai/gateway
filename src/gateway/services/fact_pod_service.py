@@ -8,12 +8,13 @@ from mcp.client import auth
 
 from gateway.clients.openid_client import HttpOpenIDClient
 from gateway.db.repository import Repository
-from gateway.models.oauth import ClientRegistrationResponse, OpenIDConfiguration
+from gateway.models.auth.oauth import ClientRegistrationResponse
+from gateway.models.auth.openid import OpenIDConfiguration
 from gateway.exceptions import (
     FactPodServiceError,
     GatewayError,
     RepositoryError,
-    HTTPError
+    HTTPError,
 )
 
 logger = logging.getLogger(__name__)
@@ -23,10 +24,10 @@ class FactPodOAuthService:
     """Service for handling Fact Pod OAuth operations."""
 
     def __init__(
-            self,
-            openid_client: HttpOpenIDClient,
-            repository: Repository,
-            base_redirect_uri: str = "https://{site}/oauth/callback",
+        self,
+        openid_client: HttpOpenIDClient,
+        repository: Repository,
+        base_redirect_uri: str = "https://{site}/oauth/callback",
     ) -> None:
         """Initialize with dependencies."""
         self.openid_client = openid_client
@@ -59,10 +60,14 @@ class FactPodOAuthService:
             # Fetch JWKS - required for token validation
             await self.openid_client.http_client.get(openid_config.jwks_uri)
 
-            registration = await self._register_client(openid_config, site, redirect_uris)
+            registration = await self._register_client(
+                openid_config, site, redirect_uris
+            )
             await self._store_oauth_config(user_id, site, registration, openid_config)
             state = str(uuid.uuid4())
-            auth_url = await self._generate_auth_url(openid_config, registration, state, redirect_uris[0])
+            auth_url = await self._generate_auth_url(
+                openid_config, registration, state, redirect_uris[0]
+            )
 
             # Store the OAuth state for CSRF protection
             await self.repository.store_oauth_state(state, user_id, site)
@@ -84,10 +89,10 @@ class FactPodOAuthService:
             # Re-raise known errors
             raise
         except Exception as error:
-            logger.error("Error enabling Fact Pod: %s",
-                         str(error), exc_info=True)
+            logger.error("Error enabling Fact Pod: %s", str(error), exc_info=True)
             raise FactPodServiceError(
-                f"Failed to enable Fact Pod: {str(error)}") from error
+                f"Failed to enable Fact Pod: {str(error)}"
+            ) from error
 
     async def _validate_fact_pod_config(self, site: str, user_id: str) -> None:
         """Validate if Fact Pod can be enabled.
@@ -104,18 +109,21 @@ class FactPodOAuthService:
             connection = await self.repository.get_user_site_connection(user_id, site)
             if connection:
                 raise GatewayError(
-                    f"Fact Pod for {site} is already enabled for user {user_id}")
+                    f"Fact Pod for {site} is already enabled for user {user_id}"
+                )
         except (GatewayError, RepositoryError, HTTPError):
             # Re-raise known errors
             raise
         except Exception as error:
-            logger.error("Error validating Fact Pod config: %s",
-                         str(error), exc_info=True)
+            logger.error(
+                "Error validating Fact Pod config: %s", str(error), exc_info=True
+            )
             raise FactPodServiceError(
-                f"Failed to validate Fact Pod config: {str(error)}") from error
+                f"Failed to validate Fact Pod config: {str(error)}"
+            ) from error
 
     async def _register_client(
-            self, openid_config: OpenIDConfiguration, site: str, redirect_uris: List[str]
+        self, openid_config: OpenIDConfiguration, site: str, redirect_uris: List[str]
     ) -> ClientRegistrationResponse:
         """Register OAuth client with the site.
 
@@ -131,16 +139,20 @@ class FactPodOAuthService:
             return await self.openid_client.register_client(
                 registration_endpoint=openid_config.registration_endpoint,
                 redirect_uris=redirect_uris,
-                client_name=f"Gateway for {site}"
+                client_name=f"Gateway for {site}",
             )
         except Exception as error:
             logger.error("Failed to register client: %s", str(error))
             raise FactPodServiceError(
-                f"Failed to register client for {site}: {str(error)}") from error
+                f"Failed to register client for {site}: {str(error)}"
+            ) from error
 
     async def _store_oauth_config(
-            self, user_id: str, site: str, registration: ClientRegistrationResponse,
-            openid_config: OpenIDConfiguration
+        self,
+        user_id: str,
+        site: str,
+        registration: ClientRegistrationResponse,
+        openid_config: OpenIDConfiguration,
     ) -> None:
         """Store OAuth configuration for user and site.
 
@@ -156,16 +168,20 @@ class FactPodOAuthService:
                 site=site,
                 client_id=registration.client_id,
                 client_secret=registration.client_secret,
-                token_endpoint=openid_config.token_endpoint
+                token_endpoint=openid_config.token_endpoint,
             )
         except Exception as error:
             logger.error("Failed to store OAuth config: %s", str(error))
             raise RepositoryError(
-                f"Failed to store OAuth configuration: {str(error)}") from error
+                f"Failed to store OAuth configuration: {str(error)}"
+            ) from error
 
     async def _generate_auth_url(
-            self, openid_config: OpenIDConfiguration, registration: ClientRegistrationResponse,
-            state: str, redirect_uri: str
+        self,
+        openid_config: OpenIDConfiguration,
+        registration: ClientRegistrationResponse,
+        state: str,
+        redirect_uri: str,
     ) -> str:
         """Generate authorization URL.
 
@@ -185,16 +201,18 @@ class FactPodOAuthService:
                 "response_type": "code",
                 "scope": "facts:read facts:make-irrelevant",
                 "redirect_uri": redirect_uri,
-                "state": state
+                "state": state,
             }
 
             # Format query string
             query_string = "&".join(
-                f"{key}={value}" for key, value in query_params.items())
+                f"{key}={value}" for key, value in query_params.items()
+            )
 
             # Return complete URL
             return f"{openid_config.authorization_endpoint}?{query_string}"
         except Exception as error:
             logger.error("Failed to generate auth URL: %s", str(error))
             raise FactPodServiceError(
-                f"Failed to generate authorization URL: {str(error)}") from error
+                f"Failed to generate authorization URL: {str(error)}"
+            ) from error

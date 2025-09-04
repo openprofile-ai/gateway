@@ -28,7 +28,7 @@ class EnableFactPodHandler(BaseHandler):
         # Initialize dependencies
         self.fact_pod_service = FactPodOAuthService(
             openid_client=HttpOpenIDClient(AsyncHTTPClient()),
-            repository=self.repository
+            repository=self.repository,
         )
 
     async def tool_method(self, user_id: str, site: str) -> Dict[str, Any]:
@@ -49,14 +49,14 @@ class EnableFactPodHandler(BaseHandler):
             return {
                 "status": "error",
                 "message": f"Service error: {str(e)}",
-                "auth_url": None
+                "auth_url": None,
             }
         except RepositoryError as e:
             logger.error(f"Repository error: {str(e)}")
             return {
                 "status": "error",
                 "message": f"Database error: {str(e)}",
-                "auth_url": None
+                "auth_url": None,
             }
         except GatewayError as e:
             logger.error(f"Gateway error: {str(e)}")
@@ -67,19 +67,20 @@ class EnableFactPodHandler(BaseHandler):
                 return {
                     "status": "already_enabled",
                     "message": f"Fact Pod for {site} is already enabled for user {user_id}",
-                    "auth_url": None
+                    "auth_url": None,
                 }
 
             return {
                 "status": "error",
                 "message": f"Gateway error: {str(e)}",
-                "auth_url": None
+                "auth_url": None,
             }
         except Exception as e:
             logger.error(
-                f"Unexpected error in EnableFactPodHandler: {str(e)}", exc_info=True)
+                f"Unexpected error in EnableFactPodHandler: {str(e)}", exc_info=True
+            )
             return {
                 "status": "error",
                 "message": f"An unexpected error occurred: {str(e)}",
-                "auth_url": None
+                "auth_url": None,
             }

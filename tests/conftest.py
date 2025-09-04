@@ -1,6 +1,7 @@
 """
 Shared test fixtures for all tests.
 """
+
 import pytest
 from fastmcp.server import FastMCP
 

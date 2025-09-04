@@ -18,8 +18,8 @@ async def test_disable_fact_pod(base_mcp_server, disable_fact_pod_handler):
         pod_name = "test_pod"
         # Note: Tool name is the handler class name per project convention
         result = await client.call_tool("DisableFactPodHandler", {"pod_name": pod_name})
-        # Parse the TextContent response
-        response = json.loads(result[0].text)
+        # Use the structured response directly
+        response = result.data
         assert "status" in response
         assert response["status"] == "disabled"
         assert "pod_name" in response

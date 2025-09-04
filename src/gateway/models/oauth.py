@@ -1,6 +1,7 @@
 """
 Data models for OAuth client registration and authentication.
 """
+
 from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 
@@ -9,6 +10,7 @@ class ClientRegistrationRequest(BaseModel):
     """
     Model representing the request body for registering a client with an OpenProfile fact pod.
     """
+
     client_name: str
     redirect_uris: List[str]
     grant_types: List[str] = ["authorization_code", "refresh_token"]
@@ -21,6 +23,7 @@ class ClientRegistrationResponse(BaseModel):
     """
     Model representing the response from registering a client with an OpenProfile fact pod.
     """
+
     client_id: str
     client_secret: str
     client_id_issued_at: Optional[int] = None
@@ -45,6 +48,7 @@ class JWKKey(BaseModel):
         n: Base64url-encoded modulus (for RSA keys)
         e: Base64url-encoded exponent (for RSA keys)
     """
+
     kty: str
     use: str
     kid: str
@@ -60,6 +64,7 @@ class JWKS(BaseModel):
     Attributes:
         keys: List of JSON Web Keys
     """
+
     keys: List[JWKKey]
 
 
@@ -69,6 +74,7 @@ class OpenIDConfiguration(BaseModel):
 
     Based on the .well-known/openprofile.json specification.
     """
+
     # Required fields
     issuer: str
     authorization_endpoint: str
@@ -81,7 +87,9 @@ class OpenIDConfiguration(BaseModel):
     response_types_supported: List[str] = ["code"]
     grant_types_supported: List[str] = ["authorization_code", "refresh_token"]
     token_endpoint_auth_methods_supported: List[str] = [
-        "client_secret_basic", "client_secret_post"]
+        "client_secret_basic",
+        "client_secret_post",
+    ]
     subject_types_supported: List[str] = ["public"]
 
     # Additional fields

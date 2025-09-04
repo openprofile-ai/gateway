@@ -1,5 +1,6 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from gateway.db.repository import Repository
+from gateway.exceptions import RepositoryError
 
 
 class DynamoDBRepository(Repository):
@@ -17,7 +18,7 @@ class DynamoDBRepository(Repository):
         self._dynamodb = None
         self._table = None
 
-    async def get_categories(self) -> list[str]:
+    async def get_categories(self) -> List[str]:
         """
         Fetch all categories from the DynamoDB table.
 
@@ -25,11 +26,15 @@ class DynamoDBRepository(Repository):
             List of category names as strings.
 
         Raises:
-            Exception: If there's an error accessing DynamoDB
+            RepositoryError: If there's an error accessing DynamoDB
         """
-        # In a real implementation, this would make an async call to DynamoDB
-        # For now, we'll return mock data
-        return ["Category1", "Category2", "Category3"]
+        try:
+            # In a real implementation, this would make an async call to DynamoDB
+            # For now, we'll return mock data
+            return ["Category1", "Category2", "Category3"]
+        except Exception as error:
+            raise RepositoryError(
+                f"Failed to fetch categories: {str(error)}") from error
 
     async def get_fact_pod_config(self, site: str) -> Optional[Dict[str, Any]]:
         """
@@ -42,19 +47,21 @@ class DynamoDBRepository(Repository):
             Configuration dictionary or None if not found
 
         Raises:
-            Exception: If there's an error accessing DynamoDB
+            RepositoryError: If there's an error accessing DynamoDB
         """
-        # In a real implementation, this would query DynamoDB for the site configuration
-        # For now, return mock data for known sites or None for unknown sites
-        if site == "example.com":
-            return {
-                "site": site,
-                "enabled": True,
-                "created_at": "2025-06-25T12:00:00Z"
-            }
-        return None
+        try:
+            # In a real implementation, this would query DynamoDB for the site configuration
+            # For now, return mock data for known sites or None for unknown sites
+            if site == "example.com":
+                return {"site": site, "enabled": True, "created_at": "2025-06-25T12:00:00Z"}
+            return None
+        except Exception as error:
+            raise RepositoryError(
+                f"Failed to get fact pod configuration for site {site}: {str(error)}") from error
 
-    async def get_user_site_connection(self, user_id: str, site: str) -> Optional[Dict[str, Any]]:
+    async def get_user_site_connection(
+        self, user_id: str, site: str
+    ) -> Optional[Dict[str, Any]]:
         """
         Check if a user has already enabled a site's fact pod.
 
@@ -66,15 +73,24 @@ class DynamoDBRepository(Repository):
             Connection details if exists, otherwise None
 
         Raises:
-            Exception: If there's an error accessing DynamoDB
+            RepositoryError: If there's an error accessing DynamoDB
         """
-        # In a real implementation, this would query DynamoDB for the user-site connection
-        # For now, return None to indicate no existing connection
-        return None
+        try:
+            # In a real implementation, this would query DynamoDB for the user-site connection
+            # For now, return None to indicate no existing connection
+            return None
+        except Exception as error:
+            raise RepositoryError(
+                f"Failed to get user-site connection for user {user_id} and site {site}: {str(error)}") from error
 
-    async def store_oauth_config(self, user_id: str, site: str,
-                                 client_id: str, client_secret: str,
-                                 redirect_url: str) -> None:
+    async def store_oauth_config(
+        self,
+        user_id: str,
+        site: str,
+        client_id: str,
+        client_secret: str,
+        redirect_url: str,
+    ) -> None:
         """
         Store OAuth configuration for a user-site connection in DynamoDB.
 
@@ -86,13 +102,17 @@ class DynamoDBRepository(Repository):
             redirect_url: OAuth redirect URL
 
         Raises:
-            Exception: If there's an error accessing DynamoDB
+            RepositoryError: If there's an error accessing DynamoDB
         """
-        # In a real implementation, this would store the OAuth config in DynamoDB
-        # For now, just log the operation
-        print(f"Storing OAuth config for user {user_id} and site {site}")
-        # Item would be created with user_id and site as keys, plus the OAuth details
-        # self._table.put_item(Item={...})
+        try:
+            # In a real implementation, this would store the OAuth config in DynamoDB
+            # For now, just log the operation
+            print(f"Storing OAuth config for user {user_id} and site {site}")
+            # Item would be created with user_id and site as keys, plus the OAuth details
+            # self._table.put_item(Item={...})
+        except Exception as error:
+            raise RepositoryError(
+                f"Failed to store OAuth configuration for user {user_id} and site {site}: {str(error)}") from error
 
     async def store_oauth_state(self, state: str, user_id: str, site: str) -> None:
         """
@@ -104,11 +124,15 @@ class DynamoDBRepository(Repository):
             site: Domain of the site
 
         Raises:
-            Exception: If there's an error accessing DynamoDB
+            RepositoryError: If there's an error accessing DynamoDB
         """
-        # In a real implementation, this would store the state in DynamoDB with TTL
-        # For now, just log the operation
-        print(
-            f"Storing OAuth state {state} for user {user_id} and site {site}")
-        # Item would be created with state as key, plus user_id, site, and expiration timestamp
-        # self._table.put_item(Item={...})
+        try:
+            # In a real implementation, this would store the state in DynamoDB with TTL
+            # For now, just log the operation
+            print(
+                f"Storing OAuth state {state} for user {user_id} and site {site}")
+            # Item would be created with state as key, plus user_id, site, and expiration timestamp
+            # self._table.put_item(Item={...})
+        except Exception as error:
+            raise RepositoryError(
+                f"Failed to store OAuth state for user {user_id} and site {site}: {str(error)}") from error

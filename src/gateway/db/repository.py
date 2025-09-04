@@ -28,7 +28,9 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    async def get_user_site_connection(self, user_id: str, site: str) -> Optional[Dict[str, Any]]:
+    async def get_user_site_connection(
+        self, user_id: str, site: str
+    ) -> Optional[Dict[str, Any]]:
         """
         Check if a user has already enabled a site's fact pod.
 
@@ -42,9 +44,14 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    async def store_oauth_config(self, user_id: str, site: str,
-                                 client_id: str, client_secret: str,
-                                 redirect_url: str) -> None:
+    async def store_oauth_config(
+        self,
+        user_id: str,
+        site: str,
+        client_id: str,
+        client_secret: str,
+        redirect_url: str,
+    ) -> None:
         """
         Store OAuth configuration for a user-site connection.
 

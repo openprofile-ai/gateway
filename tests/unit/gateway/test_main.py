@@ -14,11 +14,13 @@ class TestMain(unittest.TestCase):
         # Create a mock for FastMCP
         self.mock_mcp = MagicMock(spec=FastMCP)
 
-    @patch('gateway.main.EnableFactPodHandler')
-    @patch('gateway.main.DisableFactPodHandler')
-    @patch('gateway.main.ListOfCategoriesHandler')
-    @patch('gateway.main.FactsByCategoryHandler')
-    def test_create_application_with_instance(self, mock_facts, mock_list, mock_disable, mock_enable):
+    @patch("gateway.main.EnableFactPodHandler")
+    @patch("gateway.main.DisableFactPodHandler")
+    @patch("gateway.main.ListOfCategoriesHandler")
+    @patch("gateway.main.FactsByCategoryHandler")
+    def test_create_application_with_instance(
+        self, mock_facts, mock_list, mock_disable, mock_enable
+    ):
         """Test create_application when an MCP instance is provided."""
         # Act
         result = create_application(self.mock_mcp)
@@ -33,12 +35,14 @@ class TestMain(unittest.TestCase):
         # Verify that the provided MCP instance is returned
         self.assertEqual(result, self.mock_mcp)
 
-    @patch('gateway.main.FastMCP')
-    @patch('gateway.main.EnableFactPodHandler')
-    @patch('gateway.main.DisableFactPodHandler')
-    @patch('gateway.main.ListOfCategoriesHandler')
-    @patch('gateway.main.FactsByCategoryHandler')
-    def test_create_application_without_instance(self, mock_facts, mock_list, mock_disable, mock_enable, mock_fastmcp):
+    @patch("gateway.main.FastMCP")
+    @patch("gateway.main.EnableFactPodHandler")
+    @patch("gateway.main.DisableFactPodHandler")
+    @patch("gateway.main.ListOfCategoriesHandler")
+    @patch("gateway.main.FactsByCategoryHandler")
+    def test_create_application_without_instance(
+        self, mock_facts, mock_list, mock_disable, mock_enable, mock_fastmcp
+    ):
         """Test create_application when no MCP instance is provided."""
         # Arrange
         mock_new_mcp = MagicMock(spec=FastMCP)
@@ -61,5 +65,5 @@ class TestMain(unittest.TestCase):
         self.assertEqual(result, mock_new_mcp)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

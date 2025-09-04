@@ -2,16 +2,19 @@ import json
 import pytest
 from unittest.mock import AsyncMock, MagicMock, call
 from fastmcp import Client
+from httpx import Response
 
 from gateway.handlers.enable_fact_pod_handler import EnableFactPodHandler
-from gateway.http.client import HTTPClientInterface
-from gateway.client.interface import MCPClientInterface
+from gateway.clients.http_client import AsyncHTTPClient
+from gateway.db.repository import Repository
+from gateway.services.fact_pod_service import FactPodOAuthService
+from gateway.clients.openid_client import HttpOpenIDClient
 
 
 @pytest.fixture
 def mock_repository():
     """Create a mock repository for testing."""
-    mock = MagicMock()
+    mock = MagicMock(spec=Repository)
 
     # Setup the async mock methods
     mock.get_fact_pod_config = AsyncMock(return_value={"enabled": True})
@@ -25,7 +28,7 @@ def mock_repository():
 @pytest.fixture
 def mock_http_client():
     """Create a mock HTTP client for testing."""
-    client = MagicMock(spec=HTTPClientInterface)
+    client = MagicMock(spec=AsyncHTTPClient)
 
     # Mock OpenID configuration response with protocol = ["https"]
     openid_config_data = {
@@ -37,13 +40,17 @@ def mock_http_client():
         "scopes_supported": ["facts:read", "facts:make-irrelevant"],
         "response_types_supported": ["code"],
         "grant_types_supported": ["authorization_code", "refresh_token"],
-        "token_endpoint_auth_methods_supported": ["client_secret_basic", "client_secret_post"],
+        "token_endpoint_auth_methods_supported": [
+            "client_secret_basic",
+            "client_secret_post",
+        ],
         "subject_types_supported": ["public"],
-        "protocol": ["https"]
+        "protocol": ["https"],
     }
-    mock_openid_response = MagicMock()
+    mock_openid_response = MagicMock(spec=Response)
     mock_openid_response.status_code = 200
     mock_openid_response.json.return_value = openid_config_data
+    mock_openid_response.raise_for_status = MagicMock()
 
     # Mock JWKS response
     jwks_data = {
@@ -54,7 +61,7 @@ def mock_http_client():
                 "kid": "abc123",
                 "alg": "RS256",
                 "n": "base64url-modulus",
-                "e": "AQAB"
+                "e": "AQAB",
             }
         ]
     }
@@ -69,11 +76,13 @@ def mock_http_client():
         "client_id_issued_at": 1624553600,
         "client_secret_expires_at": 0,
         "client_name": "OpenProfile Gateway",
-        "redirect_uris": ["https://gateway.openprofile.ai/oauth/callback?site=example.com"],
+        "redirect_uris": [
+            "https://gateway.openprofile.ai/oauth/callback?site=example.com"
+        ],
         "grant_types": ["authorization_code", "refresh_token"],
         "response_types": ["code"],
         "token_endpoint_auth_method": "client_secret_post",
-        "scope": "facts:read facts:make-irrelevant"
+        "scope": "facts:read facts:make-irrelevant",
     }
     mock_registration_response = MagicMock()
     mock_registration_response.status_code = 201
@@ -99,90 +108,41 @@ def mock_http_client():
 
 
 @pytest.fixture
-def mock_mcp_client():
-    """Create a mock MCP client for testing."""
-    client = MagicMock(spec=MCPClientInterface)
-
-    # Mock responses for different calls
-    # JWKS response
-    jwks_data = {
-        "keys": [
-            {
-                "kty": "RSA",
-                "use": "sig",
-                "kid": "mcp123",
-                "alg": "RS256",
-                "n": "base64url-modulus-mcp",
-                "e": "AQAB"
-            }
-        ]
-    }
-    mock_jwks_response = MagicMock()
-    mock_jwks_response.text = json.dumps(jwks_data)
-
-    # Registration response
-    registration_data = {
-        "client_id": "mcp-client-id",
-        "client_secret": "mcp-client-secret",
-        "client_id_issued_at": 1624553600,
-        "client_secret_expires_at": 0,
-        "client_name": "OpenProfile Gateway",
-        "redirect_uris": ["https://gateway.openprofile.ai/oauth/callback?site=example.com"],
-        "grant_types": ["authorization_code", "refresh_token"],
-        "response_types": ["code"],
-        "token_endpoint_auth_method": "client_secret_post",
-        "scope": "facts:read facts:make-irrelevant"
-    }
-    mock_registration_response = MagicMock()
-    mock_registration_response.text = json.dumps(registration_data)
-
-    # Configure side effect for call_tool method
-    async def call_tool_side_effect(server_name, params):
-        if "path" in params:
-            if params["path"] == "/openprofile/oauth/jwks":
-                return [mock_jwks_response]
-            elif params["path"] == "/openprofile/oauth/register":
-                return [mock_registration_response]
-
-        # Default response
-        default_response = MagicMock()
-        default_response.text = '{}'
-        return [default_response]
-
-    client.call_tool = AsyncMock(side_effect=call_tool_side_effect)
-    client.close = AsyncMock()
-
-    return client
-
-
-@pytest.fixture
-def enable_fact_pod_handler(base_mcp_server, mock_repository, mock_http_client, mock_mcp_client):
+def enable_fact_pod_handler(
+    base_mcp_server, mock_repository, mock_http_client
+):
     """Create an EnableFactPodHandler instance for testing."""
-    handler = EnableFactPodHandler(
-        base_mcp_server,
-        http_client=mock_http_client,
-        mcp_client=mock_mcp_client
+    # Create mock OpenID client with the mock HTTP client
+    openid_client = HttpOpenIDClient(mock_http_client)
+    
+    # Create the handler and inject mock dependencies
+    handler = EnableFactPodHandler(base_mcp_server)
+    
+    # Replace the auto-created dependencies with our mocks
+    handler.fact_pod_service = FactPodOAuthService(
+        openid_client=openid_client,
+        repository=mock_repository
     )
-    # Replace the repository with our mock
-    handler.repository = mock_repository
+    
     return handler
 
 
 @pytest.mark.asyncio
-async def test_enable_fact_pod_with_https_protocol(base_mcp_server, enable_fact_pod_handler, mock_repository, mock_http_client):
+async def test_enable_fact_pod_with_https_protocol(
+    base_mcp_server, enable_fact_pod_handler, mock_repository, mock_http_client
+):
     """Test enabling a fact pod using HTTP client when protocol is https."""
     async with Client(base_mcp_server) as client:
         user_id = "test_user"
         site = "example.com"
 
         # Call the tool using the handler class name per project convention
-        result = await client.call_tool("EnableFactPodHandler", {
-            "user_id": user_id,
-            "site": site
-        })
+        result = await client.call_tool(
+            "EnableFactPodHandler", {"user_id": user_id, "site": site}
+        )
 
-        # Parse the TextContent response
-        response = json.loads(result[0].text)
+        # Use the structured response directly instead of parsing JSON
+        response = result.data
 
         # Assert expected results
         assert response["status"] == "enabled"
@@ -196,15 +156,14 @@ async def test_enable_fact_pod_with_https_protocol(base_mcp_server, enable_fact_
 
         # Verify repository method calls
         mock_repository.get_fact_pod_config.assert_called_once_with(site)
-        mock_repository.get_user_site_connection.assert_called_once_with(
-            user_id, site)
+        mock_repository.get_user_site_connection.assert_called_once_with(user_id, site)
         mock_repository.store_oauth_config.assert_called_once()
         mock_repository.store_oauth_state.assert_called_once()
 
         # Verify HTTP client calls - now we expect two GET calls
         expected_calls = [
             call(f"https://{site}/.well-known/openprofile.json"),
-            call(f"https://{site}/oauth/jwks")
+            call(f"https://{site}/oauth/jwks"),
         ]
         mock_http_client.get.assert_has_calls(expected_calls, any_order=False)
 
@@ -218,7 +177,12 @@ async def test_enable_fact_pod_with_https_protocol(base_mcp_server, enable_fact_
 
 
 @pytest.mark.asyncio
-async def test_enable_fact_pod_with_mcp_protocol(base_mcp_server, enable_fact_pod_handler, mock_repository, mock_http_client, mock_mcp_client):
+async def test_enable_fact_pod_with_mcp_protocol(
+    base_mcp_server,
+    enable_fact_pod_handler,
+    mock_repository,
+    mock_http_client,
+):
     """Test enabling a fact pod using MCP client when protocol includes mcp."""
     # Update the OpenID config to include mcp protocol
     openid_config_with_mcp = {
@@ -230,14 +194,17 @@ async def test_enable_fact_pod_with_mcp_protocol(base_mcp_server, enable_fact_po
         "scopes_supported": ["facts:read", "facts:make-irrelevant"],
         "response_types_supported": ["code"],
         "grant_types_supported": ["authorization_code", "refresh_token"],
-        "token_endpoint_auth_methods_supported": ["client_secret_basic", "client_secret_post"],
+        "token_endpoint_auth_methods_supported": [
+            "client_secret_basic",
+            "client_secret_post",
+        ],
         "subject_types_supported": ["public"],
-        "protocol": ["mcp", "https"]
+        "protocol": ["mcp", "https"],
     }
 
     # Update the mock to return the MCP-enabled config
     mock_http_client.get.side_effect = None  # Reset the side effect
-    mock_openid_response = MagicMock()
+    mock_openid_response = MagicMock(spec=Response)
     mock_openid_response.status_code = 200
     mock_openid_response.json.return_value = openid_config_with_mcp
     mock_http_client.get.return_value = mock_openid_response
@@ -246,14 +213,13 @@ async def test_enable_fact_pod_with_mcp_protocol(base_mcp_server, enable_fact_po
         user_id = "test_user"
         site = "example.com"
 
-        # Call the tool using the handler class name per project convention
-        result = await client.call_tool("EnableFactPodHandler", {
-            "user_id": user_id,
-            "site": site
-        })
+        # Call the tool
+        result = await client.call_tool(
+            "EnableFactPodHandler", {"user_id": user_id, "site": site}
+        )
 
-        # Parse the TextContent response
-        response = json.loads(result[0].text)
+        # Use the structured response directly instead of parsing JSON
+        response = result.data
 
         # Assert expected results
         assert response["status"] == "enabled"
@@ -262,20 +228,18 @@ async def test_enable_fact_pod_with_mcp_protocol(base_mcp_server, enable_fact_po
 
         # Verify repository method calls
         mock_repository.get_fact_pod_config.assert_called_with(site)
-        mock_repository.get_user_site_connection.assert_called_with(
-            user_id, site)
+        mock_repository.get_user_site_connection.assert_called_with(user_id, site)
         mock_repository.store_oauth_config.assert_called()
         mock_repository.store_oauth_state.assert_called()
-
-        # Verify MCP client was called
-        mock_mcp_client.call_tool.assert_called()
 
         # Reset the mock for other tests
         mock_http_client.get.reset_mock()
 
 
 @pytest.mark.asyncio
-async def test_already_enabled_fact_pod(base_mcp_server, enable_fact_pod_handler, mock_repository):
+async def test_already_enabled_fact_pod(
+    base_mcp_server, enable_fact_pod_handler, mock_repository
+):
     """Test handling when a user tries to enable an already enabled fact pod."""
     # Change the mock to return an existing user-site connection
     mock_repository.get_user_site_connection.return_value = {"enabled": True}
@@ -285,13 +249,12 @@ async def test_already_enabled_fact_pod(base_mcp_server, enable_fact_pod_handler
         site = "example.com"
 
         # Call the tool
-        result = await client.call_tool("EnableFactPodHandler", {
-            "user_id": user_id,
-            "site": site
-        })
+        result = await client.call_tool(
+            "EnableFactPodHandler", {"user_id": user_id, "site": site}
+        )
 
-        # Parse the TextContent response
-        response = json.loads(result[0].text)
+        # Use the structured response directly
+        response = result.data
 
         # Assert expected results
         assert response["status"] == "already_enabled"
@@ -299,13 +262,14 @@ async def test_already_enabled_fact_pod(base_mcp_server, enable_fact_pod_handler
 
         # Verify that only the connection check was called
         mock_repository.get_fact_pod_config.assert_called_once_with(site)
-        mock_repository.get_user_site_connection.assert_called_once_with(
-            user_id, site)
+        mock_repository.get_user_site_connection.assert_called_once_with(user_id, site)
         mock_repository.store_oauth_config.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_missing_fact_pod_config(base_mcp_server, enable_fact_pod_handler, mock_repository):
+async def test_missing_fact_pod_config(
+    base_mcp_server, enable_fact_pod_handler, mock_repository
+):
     """Test handling when a fact pod is not configured."""
     # Change the mock to return None for fact pod config
     mock_repository.get_fact_pod_config.return_value = None
@@ -315,13 +279,12 @@ async def test_missing_fact_pod_config(base_mcp_server, enable_fact_pod_handler,
         site = "example.com"
 
         # Call the tool
-        result = await client.call_tool("EnableFactPodHandler", {
-            "user_id": user_id,
-            "site": site
-        })
+        result = await client.call_tool(
+            "EnableFactPodHandler", {"user_id": user_id, "site": site}
+        )
 
-        # Parse the TextContent response
-        response = json.loads(result[0].text)
+        # Use the structured response directly instead of parsing JSON
+        response = result.data
 
         # Assert expected results
         assert response["status"] == "error"
@@ -333,7 +296,9 @@ async def test_missing_fact_pod_config(base_mcp_server, enable_fact_pod_handler,
 
 
 @pytest.mark.asyncio
-async def test_invalid_openid_response(base_mcp_server, enable_fact_pod_handler, mock_repository, mock_http_client):
+async def test_invalid_openid_response(
+    base_mcp_server, enable_fact_pod_handler, mock_repository, mock_http_client
+):
     """Test handling when the OpenID configuration response is invalid."""
     # Change the mock response to be invalid
     invalid_response = MagicMock()
@@ -348,20 +313,18 @@ async def test_invalid_openid_response(base_mcp_server, enable_fact_pod_handler,
         site = "example.com"
 
         # Call the tool
-        result = await client.call_tool("EnableFactPodHandler", {
-            "user_id": user_id,
-            "site": site
-        })
+        result = await client.call_tool(
+            "EnableFactPodHandler", {"user_id": user_id, "site": site}
+        )
 
-        # Parse the TextContent response
-        response = json.loads(result[0].text)
+        # Use the structured response directly instead of parsing JSON
+        response = result.data
 
         # Assert expected results
         assert response["status"] == "error"
-        assert "Failed to fetch OpenID configuration" in response["message"]
+        assert "Missing required fields in OpenID config" in response["message"]
 
         # Verify repository and HTTP client calls
         mock_repository.get_fact_pod_config.assert_called_once_with(site)
-        mock_repository.get_user_site_connection.assert_called_once_with(
-            user_id, site)
+        mock_repository.get_user_site_connection.assert_called_once_with(user_id, site)
         mock_http_client.get.assert_called_once()

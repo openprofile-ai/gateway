@@ -17,7 +17,7 @@ async def test_list_of_categories(base_mcp_server, list_of_categories_handler):
     async with Client(base_mcp_server) as client:
         # Note: We call the tool using the handler class name per project convention
         result = await client.call_tool("ListOfCategoriesHandler")
-        # Parse the TextContent response
-        response = json.loads(result[0].text)
+        # Use the structured response directly
+        response = result.data
         assert "categories" in response
         assert isinstance(response["categories"], list)

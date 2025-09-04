@@ -1,5 +1,5 @@
 """Models related to Fact Pod functionality."""
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 
 
 class OAuthConfig(BaseModel):

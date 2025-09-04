@@ -7,7 +7,6 @@ from gateway.services.fact_pod_service import FactPodOAuthService
 from gateway.clients.openid_client import HttpOpenIDClient
 from gateway.handlers.base_handler import BaseHandler
 from gateway.clients.http_client import AsyncHTTPClient
-from gateway.db.dynamodb_repository import DynamoDBRepository
 from gateway.exceptions import (
     GatewayError,
     FactPodServiceError,

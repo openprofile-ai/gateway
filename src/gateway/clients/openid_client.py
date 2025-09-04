@@ -49,8 +49,7 @@ class HttpOpenIDClient:
                 "registration_endpoint", "jwks_uri"
             }
 
-            if missing:
-                = required_fields - set(config_data):
+            if missing:= required_fields - set(config_data):
                 raise GatewayError(
                     f"Missing required fields in OpenID config: {missing}")
 

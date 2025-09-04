@@ -1,5 +1,8 @@
+import logging
+
 from fastmcp.server import FastMCP
 
+from gateway.config import settings
 from gateway.handlers.disable_fact_pod_handler import DisableFactPodHandler
 from gateway.handlers.enable_fact_pod_handler import EnableFactPodHandler
 from gateway.handlers.facts_by_category_handler import FactsByCategoryHandler
@@ -29,8 +32,17 @@ def create_application(mcp_instance: FastMCP = None) -> FastMCP:
     return mcp
 
 
+# Configure logging based on settings
+logging.basicConfig(
+    level=getattr(logging, settings.log_level),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+
 # Create the main application instance with default configuration
 mcp = create_application()
 
 if __name__ == "__main__":
-    mcp.run()
+    logging.info(
+        f"Starting OpenProfile Gateway on {settings.server_host}:{settings.server_port}"
+    )
+    mcp.run(host=settings.server_host, port=settings.server_port)

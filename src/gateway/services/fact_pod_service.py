@@ -10,6 +10,7 @@ from gateway.clients.openid_client import HttpOpenIDClient
 from gateway.db.repository import Repository
 from gateway.models.auth.oauth import ClientRegistrationResponse
 from gateway.models.auth.openid import OpenIDConfiguration
+from gateway.config import settings
 from gateway.exceptions import (
     FactPodServiceError,
     GatewayError,
@@ -27,12 +28,12 @@ class FactPodOAuthService:
         self,
         openid_client: HttpOpenIDClient,
         repository: Repository,
-        base_redirect_uri: str = "https://{site}/oauth/callback",
+        base_redirect_uri: str = None,
     ) -> None:
         """Initialize with dependencies."""
         self.openid_client = openid_client
         self.repository = repository
-        self.base_redirect_uri = base_redirect_uri
+        self.base_redirect_uri = base_redirect_uri or settings.oauth_redirect_template
         self.mcp_auth = auth
 
     async def enable_fact_pod(self, site: str, user_id: str) -> Dict[str, Any]:

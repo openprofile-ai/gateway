@@ -24,6 +24,10 @@ class GatewaySettings(BaseSettings):
     # OAuth settings
     oauth_redirect_template: str = "https://{site}/oauth/callback"
     oauth_state_ttl_seconds: int = 600  # 10 minutes
+    openid_well_known_path: str = Field(
+        default=".well-known/openprofile.json",
+        description="Path to the OpenID configuration file",
+    )
 
     # Service settings
     log_level: str = Field("INFO", description="Logging level")

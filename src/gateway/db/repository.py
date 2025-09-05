@@ -75,3 +75,13 @@ class Repository(ABC):
             site: Domain of the site
         """
         pass
+
+    @abstractmethod
+    async def store_fact_pod_config(self, config: Dict[str, Any]) -> None:
+        """
+        Store or update configuration for a fact pod site.
+
+        Args:
+            config: Configuration dictionary (must contain 'site' key)
+        """
+        pass

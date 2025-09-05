@@ -11,6 +11,7 @@ from gateway.models.auth.oauth import (
 )
 from gateway.models.auth.openid import OpenIDConfiguration
 from gateway.exceptions import GatewayError, HTTPError, FactPodServiceError
+from gateway.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ class HttpOpenIDClient:
             ValueError: If configuration is missing required fields
         """
         base_url = f"https://{site}" if "://" not in site else site
-        config_url = urljoin(base_url, ".well-known/openprofile.json")
+        config_url = urljoin(base_url, settings.openid_well_known_path)
 
         try:
             response = await self.http_client.get(config_url)

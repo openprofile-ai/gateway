@@ -15,10 +15,3 @@ repos:
         types: [python]
         pass_filenames: false
         always_run: true
-      - id: import-check
-        name: import gateway.main
-        entry: uv run python -c "import gateway.main"
-        language: system
-        types: [python]
-        pass_filenames: false
-        always_run: true

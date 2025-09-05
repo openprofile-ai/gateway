@@ -2,7 +2,8 @@
 
 import logging
 import uuid
-from typing import Dict, List, Any
+import time
+from typing import Any, Dict, List
 
 from mcp.client import auth
 
@@ -10,6 +11,7 @@ from gateway.clients.openid_client import HttpOpenIDClient
 from gateway.db.repository import Repository
 from gateway.models.auth.oauth import ClientRegistrationResponse
 from gateway.models.auth.openid import OpenIDConfiguration
+from gateway.config import settings
 from gateway.exceptions import (
     FactPodServiceError,
     GatewayError,
@@ -27,62 +29,96 @@ class FactPodOAuthService:
         self,
         openid_client: HttpOpenIDClient,
         repository: Repository,
-        base_redirect_uri: str = "https://{site}/oauth/callback",
+        base_redirect_uri: str | None = None,
     ) -> None:
         """Initialize with dependencies."""
         self.openid_client = openid_client
         self.repository = repository
-        self.base_redirect_uri = base_redirect_uri
+        self.base_redirect_uri = base_redirect_uri or settings.oauth_redirect_template
         self.mcp_auth = auth
 
-    async def enable_fact_pod(self, site: str, user_id: str) -> Dict[str, Any]:
-        """Enable Fact Pod for a user and site.
+    async def enable_fact_pod(self, user_id: str, site: str) -> Dict[str, Any]:
+        """Enable Fact Pod for the user.
 
         Args:
-            site: The site domain
-            user_id: The user ID
+            user_id: ID of the user
+            site: Domain of the site
 
         Returns:
-            Dictionary with status, message, and auth URL if successful
+            Dict with status, message, and auth_url
 
         Raises:
             FactPodServiceError: If any step in the process fails
-            GatewayError: If Fact Pod is not configured or already enabled
             HTTPError: If OpenID configuration retrieval fails
             HTTPError: If client registration fails
         """
-        await self._validate_fact_pod_config(site, user_id)
+        already_enabled = await self._validate_fact_pod_config(site, user_id)
+
+        if already_enabled:
+            # User already has this fact pod enabled, return success without proceeding
+            return {
+                "status": "enabled",
+                "message": "Fact Pod was already enabled for this site",
+                "auth_url": None,
+            }
 
         try:
-            openid_config = await self.openid_client.get_openid_config(site)
+            # Check if we already have a configuration for this site
+            existing_config = await self.repository.get_fact_pod_config(site)
+
+            # Prepare redirect URIs
             redirect_uris = [self.base_redirect_uri.format(site=site)]
+            redirect_uri = redirect_uris[0]
 
-            # Fetch JWKS - required for token validation
-            await self.openid_client.http_client.get(openid_config.jwks_uri)
+            # Get or fetch OpenID configuration
+            if existing_config:
+                # Use existing configuration from the database
+                logger.info(f"Using existing fact pod configuration for site {site}")
+                openid_config = OpenIDConfiguration(**existing_config["openid_config"])
+            else:
+                # Fetch configuration from the site
+                logger.info(f"Fetching new fact pod configuration for site {site}")
+                openid_config = await self.openid_client.get_openid_config(site)
 
+                # Store the OpenID configuration in the database for future use
+                config_dict = {
+                    "site": site,
+                    "enabled": True,
+                    "openid_config": openid_config.model_dump(),
+                    "created_at": int(time.time()),
+                    "updated_at": int(time.time()),
+                }
+                await self.repository.store_fact_pod_config(config_dict)
+                logger.info(f"Stored fact pod configuration for site {site}")
+
+            # Register client with the site - done regardless of where the config came from
             registration = await self._register_client(
                 openid_config, site, redirect_uris
             )
-            await self._store_oauth_config(user_id, site, registration, openid_config)
+
+            # Store OAuth config
+            await self.repository.store_oauth_config(
+                user_id=user_id,
+                site=site,
+                client_id=registration.client_id,
+                client_secret=registration.client_secret,
+                redirect_url=redirect_uri,
+            )
+
+            # Generate state and auth URL
             state = str(uuid.uuid4())
             auth_url = await self._generate_auth_url(
-                openid_config, registration, state, redirect_uris[0]
+                openid_config, registration, state, redirect_uri
             )
 
             # Store the OAuth state for CSRF protection
             await self.repository.store_oauth_state(state, user_id, site)
 
-            # Determine the protocol used based on the OpenID config
-            protocol_used = "https"
-            if openid_config.protocol and "mcp" in openid_config.protocol:
-                protocol_used = "mcp"
-
+            # Return a simplified response format according to the documented interface
             return {
                 "status": "enabled",
                 "message": "Authorization URL generated successfully",
                 "auth_url": auth_url,
-                "supported_scopes": ["facts:read", "facts:make-irrelevant"],
-                "protocol_used": protocol_used,
             }
 
         except (GatewayError, RepositoryError, HTTPError):
@@ -94,33 +130,28 @@ class FactPodOAuthService:
                 f"Failed to enable Fact Pod: {str(error)}"
             ) from error
 
-    async def _validate_fact_pod_config(self, site: str, user_id: str) -> None:
-        """Validate if Fact Pod can be enabled.
+    async def _validate_fact_pod_config(self, site: str, user_id: str) -> bool:
+        """Validate if Fact Pod can be enabled for the user and site.
 
         Args:
             site: Domain of the site
             user_id: ID of the user
-        """
-        try:
-            config = await self.repository.get_fact_pod_config(site)
-            if not config:
-                raise GatewayError(f"Fact Pod for {site} is not configured")
 
-            connection = await self.repository.get_user_site_connection(user_id, site)
-            if connection:
-                raise GatewayError(
-                    f"Fact Pod for {site} is already enabled for user {user_id}"
-                )
-        except (GatewayError, RepositoryError, HTTPError):
-            # Re-raise known errors
-            raise
-        except Exception as error:
-            logger.error(
-                "Error validating Fact Pod config: %s", str(error), exc_info=True
-            )
-            raise FactPodServiceError(
-                f"Failed to validate Fact Pod config: {str(error)}"
-            ) from error
+        Returns:
+            Boolean indicating if user already has connection to the site
+
+        Raises:
+            RepositoryError: If repository operations fail
+        """
+        # Check if the user has already enabled this site's Fact Pod
+        user_site_connection = await self.repository.get_user_site_connection(
+            user_id, site
+        )
+        if user_site_connection:
+            logger.info(f"User {user_id} already has connection to {site}")
+            return True
+
+        return False
 
     async def _register_client(
         self, openid_config: OpenIDConfiguration, site: str, redirect_uris: List[str]
@@ -145,35 +176,6 @@ class FactPodOAuthService:
             logger.error("Failed to register client: %s", str(error))
             raise FactPodServiceError(
                 f"Failed to register client for {site}: {str(error)}"
-            ) from error
-
-    async def _store_oauth_config(
-        self,
-        user_id: str,
-        site: str,
-        registration: ClientRegistrationResponse,
-        openid_config: OpenIDConfiguration,
-    ) -> None:
-        """Store OAuth configuration for user and site.
-
-        Args:
-            user_id: ID of the user
-            site: Domain of the site
-            registration: Client registration response
-            openid_config: OpenID configuration
-        """
-        try:
-            await self.repository.store_oauth_config(
-                user_id=user_id,
-                site=site,
-                client_id=registration.client_id,
-                client_secret=registration.client_secret,
-                token_endpoint=openid_config.token_endpoint,
-            )
-        except Exception as error:
-            logger.error("Failed to store OAuth config: %s", str(error))
-            raise RepositoryError(
-                f"Failed to store OAuth configuration: {str(error)}"
             ) from error
 
     async def _generate_auth_url(
